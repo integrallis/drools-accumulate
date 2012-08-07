@@ -1,0 +1,45 @@
+package org.integrallis.drools.examples
+ 
+rule "IssueArrestWarrantIfTrafficTicketsTotal5000"
+    salience 5
+    when
+        person : Person()
+        totalForTickets : Double( doubleValue > 5000.0 )
+            from accumulate( 
+                Ticket( driver == person, reason == "SPEEDING", ticketAmount : amount ),
+                init( double total = 0.0; ),
+                action( total += ticketAmount; ),
+                reverse( total -= ticketAmount; ),
+                result( total )
+            )
+    then
+        insertLogical(new ArrestWarrant(person, "SPEEDING", totalForTickets));
+end
+
+rule "Remove600DollarTicket"
+    salience 3
+    when
+       ticket : Ticket(amount == 600.0)
+    then
+       System.out.println("Removing ticket for $600.0");
+       retract(ticket);
+end
+
+rule "ArrestWarrantIssued"
+salience 4
+    when
+        warrant : ArrestWarrant()
+    then
+        System.out.println(warrant);
+end
+
+rule "NoArrestWarrant"
+    when
+        not ArrestWarrant()
+    then
+       System.out.println("All Arrest Warrants have been removed");
+end
+
+query "GetWarrants" 
+    warrant : ArrestWarrant()
+end
