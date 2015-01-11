@@ -1,18 +1,10 @@
 package org.integrallis.drools.examples;
 
-import org.drools.KnowledgeBase;
-import org.drools.KnowledgeBaseFactory;
-import org.drools.builder.KnowledgeBuilder;
-import org.drools.builder.KnowledgeBuilderError;
-import org.drools.builder.KnowledgeBuilderErrors;
-import org.drools.builder.KnowledgeBuilderFactory;
-import org.drools.builder.ResourceType;
-import org.drools.io.ResourceFactory;
-import org.drools.logger.KnowledgeRuntimeLogger;
-import org.drools.logger.KnowledgeRuntimeLoggerFactory;
-import org.drools.runtime.StatefulKnowledgeSession;
-import org.drools.runtime.rule.QueryResults;
-import org.drools.runtime.rule.QueryResultsRow;
+import org.kie.api.KieServices;
+import org.kie.api.runtime.KieContainer;
+import org.kie.api.runtime.KieSession;
+import org.kie.api.runtime.rule.QueryResults;
+import org.kie.api.runtime.rule.QueryResultsRow;
 
 /**
  * This is a sample class to launch a rule.
@@ -20,11 +12,13 @@ import org.drools.runtime.rule.QueryResultsRow;
 public class AccumulateExample {
 
 	public static final void main(String[] args) {
-		try {
-			// load up the knowledge base
-			KnowledgeBase kbase = readKnowledgeBase();
-			StatefulKnowledgeSession ksession = kbase.newStatefulKnowledgeSession();
-			KnowledgeRuntimeLogger logger = KnowledgeRuntimeLoggerFactory.newFileLogger(ksession, "test");
+	    KieSession ksession = null;
+	    try {
+	        // load up the knowledge base
+	        KieServices ks = KieServices.Factory.get();
+		    KieContainer kContainer = ks.getKieClasspathContainer();
+		    ksession = kContainer.newKieSession("ksession-rules");
+	        
 			// go !
 			Person smokey = new Person("Smokey");
 			Ticket ticket1 = new Ticket(smokey, 1500.0, "SPEEDING", false);
@@ -47,26 +41,10 @@ public class AccumulateExample {
 			    ArrestWarrant warrant = (ArrestWarrant) row.get( "warrant" );
 			    System.out.println(warrant);
 			}	
-			
-			logger.close();
 		} catch (Throwable t) {
 			t.printStackTrace();
-		}
+        } finally {
+          	ksession.dispose();
+        }
 	}
-
-	private static KnowledgeBase readKnowledgeBase() throws Exception {
-		KnowledgeBuilder kbuilder = KnowledgeBuilderFactory.newKnowledgeBuilder();
-		kbuilder.add(ResourceFactory.newClassPathResource("accumulate.drl"), ResourceType.DRL);
-		KnowledgeBuilderErrors errors = kbuilder.getErrors();
-		if (errors.size() > 0) {
-			for (KnowledgeBuilderError error: errors) {
-				System.err.println(error);
-			}
-			throw new IllegalArgumentException("Could not parse knowledge.");
-		}
-		KnowledgeBase kbase = KnowledgeBaseFactory.newKnowledgeBase();
-		kbase.addKnowledgePackages(kbuilder.getKnowledgePackages());
-		return kbase;
-	}
-
 }
